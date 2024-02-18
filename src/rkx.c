@@ -96,6 +96,64 @@ static const struct cmd* get_cmd(char *name) {
     return cmd;
 }
 
+/* Callback called when the client receives a CONNACK message from the broker. */
+static void rkx_connect_cb(struct mosquitto *mosq, void *obj, int reason_code) {
+    int rc;
+	kxmq *kq = (kxmq*)obj;
+    /* Print out the connection result. mosquitto_connack_string() produces an
+	 * appropriate string for MQTT v3.x clients, the equivalent for MQTT v5.0
+	 * clients is mosquitto_reason_string().
+	 */
+	printf("MQTT connect: %s\n", mosquitto_connack_string(reason_code));
+	if(reason_code != 0){
+		/* If the connection fails for any reason, we don't want to keep on
+		 * retrying in this example, so disconnect. Without this, the client
+		 * will attempt to reconnect. */
+		mosquitto_disconnect(mosq);
+	}
+
+	/* Making subscriptions in the on_connect() callback means that if the
+	 * connection drops and is automatically resumed by the client, then the
+	 * subscriptions will be recreated when the client reconnects. */
+	rc = mosquitto_subscribe(mosq, NULL, kq->topic, 1);
+	if(rc != MOSQ_ERR_SUCCESS){
+		fprintf(stderr, "MQTT Error subscribing: %s\n", mosquitto_strerror(rc));
+		/* We might as well disconnect if we were unable to subscribe */
+		mosquitto_disconnect(mosq);
+	}
+}
+
+/* Callback called when the broker sends a SUBACK in response to a SUBSCRIBE. */
+static void rkx_subscribe_cb(struct mosquitto *mosq, void *obj, 
+	int mid, int qos_count, const int *granted_qos) {
+	
+	int i;
+	bool have_subscription = false;
+
+	/* In this example we only subscribe to a single topic at once, but a
+	 * SUBSCRIBE can contain many topics at once, so this is one way to check
+	 * them all. */
+	for(i = 0; i < qos_count; i++){
+		printf("MQTT QoS level for topic %d : granted qos = %d\n", i, granted_qos[i]);
+		if(granted_qos[i] <= 2){
+			have_subscription = true;
+		}
+	}
+	if(have_subscription == false){
+		/* The broker rejected all of our subscriptions, we know we only sent
+		 * the one SUBSCRIBE, so there is no point remaining connected. */
+		fprintf(stderr, "Error: All subscriptions rejected.\n");
+		mosquitto_disconnect(mosq);
+	}
+}
+
+/* Callback called when the client receives a message. */
+static void rkx_message_cb(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
+{
+	/* This blindly prints the payload, but the payload can be anything so take care. */
+	printf("%s %d %s\n", msg->topic, msg->qos, (char *)msg->payload);
+}
+
 static int split_str(char *line, char ***argv) {
     int argc = 0;
     char *line_start = line;
@@ -187,7 +245,11 @@ void rkx_init(struct kxclient *kx) {
     kx->user = NULL;
     kx->net = kx_sync_creat_net("127.0.0.1", 6379);
     kx->db = NULL;
+
     kx->mq = kx_mq_init("127.0.0.1", 1883, "test/topic");
+    kx_mq_set_connect_cb(kx->mq, rkx_connect_cb);
+	kx_mq_set_subscribe_cb(kx->mq, rkx_subscribe_cb);
+	kx_mq_set_message_cb(kx->mq, rkx_message_cb);
 
     pthread_rwlock_init(&kx->rwlock, NULL);
 }
@@ -208,8 +270,10 @@ int main(int argc, char *argv[]) {
     kx_loop();
 
     kx_free_net(client.net);
+    kx_mq_free(client.mq);
     pthread_rwlock_destroy(&client.rwlock);
     free(gctx->argv);
     zfree(gctx);
+
     return 0;
 }

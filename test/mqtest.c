@@ -35,7 +35,7 @@ static void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
 	 * appropriate string for MQTT v3.x clients, the equivalent for MQTT v5.0
 	 * clients is mosquitto_reason_string().
 	 */
-	printf("on_connect: %s\n", mosquitto_connack_string(reason_code));
+	printf("MQTT connect: %s\n", mosquitto_connack_string(reason_code));
 	if(reason_code != 0){
 		/* If the connection fails for any reason, we don't want to keep on
 		 * retrying in this example, so disconnect. Without this, the client
@@ -48,7 +48,7 @@ static void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
 	 * subscriptions will be recreated when the client reconnects. */
 	rc = mosquitto_subscribe(mosq, NULL, kq->topic, 1);
 	if(rc != MOSQ_ERR_SUCCESS){
-		fprintf(stderr, "Error subscribing: %s\n", mosquitto_strerror(rc));
+		fprintf(stderr, "MQTT Error subscribing: %s\n", mosquitto_strerror(rc));
 		/* We might as well disconnect if we were unable to subscribe */
 		mosquitto_disconnect(mosq);
 	}
@@ -61,11 +61,12 @@ static void on_subscribe(struct mosquitto *mosq, void *obj,
 	int i;
 	bool have_subscription = false;
 
+	printf("MQTT Subscribed (mid: %d) : %d\n", mid, granted_qos[0]);
 	/* In this example we only subscribe to a single topic at once, but a
 	 * SUBSCRIBE can contain many topics at once, so this is one way to check
 	 * them all. */
 	for(i = 0; i < qos_count; i++){
-		printf("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
+		printf("MQTT QoS level for topic %d : granted qos = %d\n", i, granted_qos[i]);
 		if(granted_qos[i] <= 2){
 			have_subscription = true;
 		}
@@ -73,7 +74,7 @@ static void on_subscribe(struct mosquitto *mosq, void *obj,
 	if(have_subscription == false){
 		/* The broker rejected all of our subscriptions, we know we only sent
 		 * the one SUBSCRIBE, so there is no point remaining connected. */
-		fprintf(stderr, "Error: All subscriptions rejected.\n");
+		fprintf(stderr, "MQTT Error: All subscriptions rejected.\n");
 		mosquitto_disconnect(mosq);
 	}
 }
@@ -91,7 +92,7 @@ static void on_logcb(struct mosquitto *mosq, void *obj, int level, const char *s
 	UNUSED(obj);
 	UNUSED(level);
 
-	printf("%s\n", str);
+	// printf("%s\n", str);
 }
 
 /** @brief Create an MQTT management object. 

@@ -29,7 +29,7 @@
 #include "mq.h"
 #include "zmalloc.h"
 
-#define UNUSED(A) (void)(A)
+#define UNUSED(A)   (void)(A)
 
 /* Callback called when the client receives a CONNACK message from the broker. */
 static void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
