@@ -135,6 +135,11 @@ static void rkx_subscribe_cb(struct mosquitto *mosq, void *obj,
 	 * them all. */
 	for(i = 0; i < qos_count; i++){
 		printf("MQTT QoS level for topic %d : granted qos = %d\n", i, granted_qos[i]);
+        /* QoS 0 (at most once): Messages are delivered at most once without acknowledgment.
+         * QoS 1 (at least once): The message is delivered at least once, 
+         *       ensuring that the message is delivered at least once.
+         * QoS 2 (Only Once): Messages are delivered only once and ensure 
+         *       that messages are delivered only once. */
 		if(granted_qos[i] <= 2){
 			have_subscription = true;
 		}
