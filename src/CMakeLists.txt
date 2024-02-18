@@ -31,12 +31,14 @@ else()
     message(FATAL_ERROR "libpthread not found.")
 endif()
 
+
+
 link_directories(/home/yrb/src/hiredis/build 
                 ../liblmdb 
-                /home/yrb/src/mosquitto-master/lib) 
+                ../build/mosquitto/lib) 
 include_directories(/home/yrb/src 
                     ../liblmdb 
-                    /home/yrb/src/mosquitto-master/include)
+                    ../mosquitto/include)
 # find_library(LIBHIREDIS_LIBRARY hiredis)
 # if(LIBHIREDIS_LIBRARY)
 #     message(STATUS "Found hiredis: ${LIBHIREDIS_LIBRARY}")
@@ -45,8 +47,11 @@ include_directories(/home/yrb/src
 # endif()
 
 file(GLOB_RECURSE SOURCES "*.c" "*.h")
+# set(SOURCES "*.c" "*.h")
 
 add_executable(rkx ${SOURCES})
-target_link_libraries(rkx PRIVATE hiredis lmdb :libmosquitto.so.1 ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
+# 添加依赖关系，确保在构建 rkx 之前构建 mosquitto
+add_dependencies(rkx mosquitto)
+target_link_libraries(rkx PRIVATE hiredis lmdb :libmosquitto.so ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
 # find_package(Threads REQUIRED)
 # target_link_libraries(rkx PRIVATE Threads::Threads)

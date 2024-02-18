@@ -18,10 +18,10 @@ set(CMAKE_BUILD_TYPE Debug)
 project(rkxtest)
 
 link_directories(/home/yrb/src/hiredis/build 
-                 /home/yrb/src/mosquitto-master/lib)
+                ../build/mosquitto/lib)
 include_directories(/home/yrb/src 
                     ../src 
-                    /home/yrb/src/mosquitto-master/include)
+                    ../mosquitto/include)
 # find_library(LIBHIREDIS_LIBRARY hiredis)
 # if(LIBHIREDIS_LIBRARY)
 #     message(STATUS "Found hiredis: ${LIBHIREDIS_LIBRARY}")
