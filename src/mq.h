@@ -31,12 +31,48 @@
 
 #include "rkxconfig.h"
 
+typedef void (*callback_connect)(struct mosquitto *mosq, void *obj, 
+								int reason_code);
+typedef void (*callback_subscribe)(struct mosquitto *mosq, void *obj, 
+								int mid, int qos_count, const int *granted_qos);
+typedef void (*callback_message)(struct mosquitto *mosq, void *obj, 
+								const struct mosquitto_message *msg);
+typedef void (*callback_log)(struct mosquitto *mosq, void *obj, 
+							int level, const char *str);
+
 typedef struct kxmq {
     struct mosquitto *mosq;
+    int keepalive;				/* in seconds */
+	char *host;
+	int port;
+    char *topic;
+	callback_connect on_connect;
+	callback_subscribe on_subscribe;
+	callback_message on_message;
+	callback_log on_log;
 } kxmq;
 
-/** @brief creat MQTT broker
- * @return reruen mq pointer object */
-kxmq *kx_create_mq(void);
+/** @brief Create an MQTT management object. 
+ * @param host Link server address
+ * @param port Server port
+ * @param tp Subscribe to the topic
+ * @return kxmq MQTT manager object If it fails, return NULL.
+*/
+kxmq *kx_mq_init(const char *host, int port, const char *tp);
+
+/** @brief Release MQTT management resources
+ * @param kq mq instance.
+*/
+void kx_mq_free(kxmq *kq);
+
+/** @brief Start mosquitto loop
+ * @param kq kxmq instance.
+ * @return If successful, it returns 0; otherwise, it returns -1. */
+int kx_mq_loop_start(kxmq *kq);
+
+void kx_mq_set_connect_cb(kxmq *kq, callback_connect fconnect);
+void kx_mq_set_subscribe_cb(kxmq *kq, callback_subscribe fsubscribe);
+void kx_mq_set_message_cb(kxmq *kq, callback_message fmessage);
+void kx_mq_set_log_cb(kxmq *kq, callback_log flog);
 
 #endif

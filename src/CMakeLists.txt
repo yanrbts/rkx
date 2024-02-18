@@ -47,7 +47,6 @@ include_directories(/home/yrb/src
 # endif()
 
 file(GLOB_RECURSE SOURCES "*.c" "*.h")
-# set(SOURCES "*.c" "*.h")
 
 add_executable(rkx ${SOURCES})
 # 添加依赖关系，确保在构建 rkx 之前构建 mosquitto
