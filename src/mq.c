@@ -16,6 +16,7 @@
 #include "mq.h"
 #include "zmalloc.h"
 
+
 kxmq *kx_init_mq(const char *tp) {
     kxmq *mq = zmalloc(sizeof(*mq));
 
