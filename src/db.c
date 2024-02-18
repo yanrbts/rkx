@@ -203,7 +203,7 @@ static void get_file_list(kxdb *db) {
     while (mdb_cursor_get(cursor, &mdb_key, &mdb_data, MDB_NEXT) == MDB_SUCCESS) {
         char *key = (char *)mdb_key.mv_data;
         kxfile *kf = (kxfile *)mdb_data.mv_data;
-        printf(" [*] %-18s%-48s%20lu [L+]\n", kf->fname, kf->fullname, kf->uuid);
+        printf(" [*] %-10s%-30s%20lu [L+]\n", kf->fname, kf->fullname, kf->uuid);
     }
     // Close the cursor and transaction
     mdb_cursor_close(cursor);

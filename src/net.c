@@ -57,7 +57,7 @@ struct action acs[] = {
     {.type = USER_LOGIN, .cmdline = "HMSET node:%s:user:%s isonline %d", .exec = NULL, .syncexec = kx_set_reply},
     {.type = USER_GET, .cmdline = "HGETALL node:%s:user:%s", .exec = NULL, .syncexec = NULL},
     {.type = NODE_GET, .cmdline = "HMSET node:%s", .exec = NULL, .syncexec = NULL},
-    {.type = FILE_CRYPT, .cmdline = "HMSET node:%s:user:%s:files:%lu filename %s path %s uuid %lu", .exec = NULL, .syncexec = kx_set_reply},
+    {.type = FILE_CRYPT, .cmdline = "HMSET fileuuid:%lu filename %s path %s uuid %lu user %s muuid %s", .exec = NULL, .syncexec = kx_set_reply},
     {.type = FILE_GET, .cmdline = "HGETALL %s", .exec = NULL, .syncexec = NULL},
     {.type = FILE_GETLIST, .cmdline = "KEYS node:%s:user:%s:files:*", .exec = NULL, .syncexec = NULL},
 };

@@ -187,6 +187,7 @@ void rkx_init(struct kxclient *kx) {
     kx->user = NULL;
     kx->net = kx_sync_creat_net("127.0.0.1", 6379);
     kx->db = NULL;
+    kx->mq = kx_create_mq();
 
     pthread_rwlock_init(&kx->rwlock, NULL);
 }

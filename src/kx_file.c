@@ -176,12 +176,12 @@ static int file_encrypt() {
 
         struct action *ac = kx_search_action(FILE_CRYPT);
         kx_sync_send_cmd(client.net, ac, ac->cmdline, 
-                        client.node->uuid,
-                        client.user->username,
                         kf->uuid,
                         kf->fname,
                         kf->fullname,
-                        kf->uuid);
+                        kf->uuid,
+                        client.user->username,
+                        client.node->uuid);
 
         /* Save encrypted file information and make local persistence*/
         snprintf(buf, sizeof(buf), "%s:%lu", client.user->username, kf->uuid);

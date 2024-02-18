@@ -55,5 +55,6 @@
 #include <hiredis/adapters/libevent.h>
 #include <lmdb.h>
 #include <mosquitto.h>
+#include <mqtt_protocol.h>
 
 #endif

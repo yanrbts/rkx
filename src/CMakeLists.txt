@@ -33,7 +33,7 @@ endif()
 
 link_directories(/home/yrb/src/hiredis/build 
                 ../liblmdb 
-                /home/yrb/src/mosquitto-master/build/lib)
+                /home/yrb/src/mosquitto-master/lib) 
 include_directories(/home/yrb/src 
                     ../liblmdb 
                     /home/yrb/src/mosquitto-master/include)
@@ -47,6 +47,6 @@ include_directories(/home/yrb/src
 file(GLOB_RECURSE SOURCES "*.c" "*.h")
 
 add_executable(rkx ${SOURCES})
-target_link_libraries(rkx PRIVATE hiredis lmdb mosquitto ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
+target_link_libraries(rkx PRIVATE hiredis lmdb :libmosquitto.so.1 ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
 # find_package(Threads REQUIRED)
 # target_link_libraries(rkx PRIVATE Threads::Threads)
