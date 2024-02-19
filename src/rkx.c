@@ -39,6 +39,9 @@ struct cmd {
     int (*execute)(struct context *ctx);
 };
 
+static int g_cbComplete = 0;
+static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t g_cond = PTHREAD_COND_INITIALIZER;
 struct kxclient client;
 struct context *gctx;
 char *kx_prompt = NULL;
@@ -148,6 +151,11 @@ static void rkx_subscribe_cb(struct mosquitto *mosq, void *obj,
 		fprintf(stderr, "Error: All subscriptions rejected.\n");
 		mosquitto_disconnect(mosq);
 	}
+
+    pthread_mutex_lock(&g_mutex);
+    g_cbComplete = 1;
+    pthread_cond_signal(&g_cond);
+    pthread_mutex_unlock(&g_mutex);
 }
 
 /* Callback called when the client receives a message. */
@@ -279,7 +287,14 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
-    sleep(3);
+    /* Wait for the subscription callback to complete before 
+     * continuing the main thread execution to prevent 
+     * confusion in printing information. */
+    pthread_mutex_lock(&g_mutex);
+    while (!g_cbComplete) {
+        pthread_cond_wait(&g_cond, &g_mutex);
+    }
+    pthread_mutex_unlock(&g_mutex);
 
     gctx = zmalloc(sizeof (*gctx));
     if (gctx == NULL) {
