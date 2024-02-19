@@ -29,6 +29,7 @@
 #include "db.h"
 #include "zmalloc.h"
 #include "file.h"
+#include "util.h"
 
 #define KXDEFAULTSIZE  (10 * 1024 * 1024) // 10M
 
@@ -48,6 +49,7 @@ static void get_file_list(kxdb *db);
 
 kxdb *kx_creat_db(uint64_t size, const char *dbpath, const char *dbname) {
     int rc;
+    struct stat st;
 
     kxdb *db = zmalloc(sizeof(*db));
     if (db == NULL) return NULL;
@@ -70,6 +72,12 @@ kxdb *kx_creat_db(uint64_t size, const char *dbpath, const char *dbname) {
 		goto err;
 	}
     mdb_env_set_maxdbs(db->env, 4);
+
+    /* Check if the directory exists and create it if it does not exist */
+    if (stat(dbpath, &st) < 0) {
+        kx_mkdirp(dbpath, 0777);
+    }
+
     rc = mdb_env_open(db->env, dbpath, 0, 0664);
     if (rc) {
         fprintf(stderr, "mdb_env_open failed, error %d %s\n", rc, mdb_strerror(rc));

@@ -56,4 +56,4 @@ add_dependencies(rkx lmdb)
 # 添加依赖关系，确保在构建 rkx 之前构建 mosquitto
 add_dependencies(rkx mosquitto)
 
-target_link_libraries(rkx PRIVATE hiredis :liblmdb.a :libmosquitto.so ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
+target_link_libraries(rkx PRIVATE hiredis :liblmdb.so :libmosquitto.so ${LIBEVENT_LIBRARY} ${LIBPTHREAD})

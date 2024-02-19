@@ -26,58 +26,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __KX_RKX_H__
-#define __KX_RKX_H__
+#ifndef __KX_UTIL_H__
+#define __KX_UTIL_H__
 
-#include "rkxconfig.h"
-#include "xxhash.h"
-#include "zmalloc.h"
-#include "log.h"
-#include "node.h"
-#include "user.h"
-#include "file.h"
-#include "adlist.h"
-#include "net.h"
-#include "aes.h"
-#include "db.h"
-#include "mq.h"
-
-#define MAXMAPSIZE  (10 * 1024 * 1024)
-
-struct kxoption {
-    struct kxoption *next;
-    char *key;
-    char *opt_string;
-    char *value;
-};
-
-struct options {
-    struct kxoption *kx_options;
-};
-struct context {
-    struct options *options;
-    int argc;
-    char **argv;
-};
-
-struct kxclient {
-    kxnode *node;               /* client node A machine can only have one node*/
-    kxuser *user;               /* User Info */
-    kxsyncnet *net;
-    kxdb *db;
-    kxmq *mq;
-    list *local_cryptfiles;     /* Local encrypted files */
-    list *remote_cryptfiles;    /* Encrypt files remotely */
-    pthread_t ptdnet;
-    pthread_t ptdmq;            /* MQTT server thread id*/
-    pthread_rwlock_t rwlock;
-};
-
-/** Initialize client node
- * @note Only called once when the server starts
- */
-void rkx_init(struct kxclient *kx);
-
-extern struct kxclient client;
+/** @brief Create multi-level directories
+ * @param pathname pathname of create a directory
+ * @param mode The argument mode specifies the mode for the new directory (see inode(7))
+ * @return Returns 0 on success, otherwise returns -1 */
+int kx_mkdirp(const char *path, unsigned int mode);
 
 #endif

@@ -32,8 +32,6 @@
 #include "kx_file.h"
 #include "kx_command.h"
 
-#define USERNAME    "yrb"
-#define USERPWD     "123"
 #define KX_PROMPT   "rkx>"
 
 struct cmd {
@@ -243,6 +241,15 @@ static void kx_loop() {
     linenoiseHistorySave(file);
 }
 
+static void *kxmq_thread_main(void *arg) {
+    kxmq *mq = (kxmq*)arg;
+
+    if (kx_mq_loop_start(mq) == -1) {
+        fprintf(stderr, "Unable to start MQTT server loop\n");
+        exit(2);
+    }
+}
+
 void rkx_init(struct kxclient *kx) {
     kx->local_cryptfiles = listCreate();
     kx->remote_cryptfiles = listCreate();
@@ -265,6 +272,14 @@ int main(int argc, char *argv[]) {
 
     /* init client struct data*/
     rkx_init(&client);
+    /* start MQTT server*/
+    if (pthread_create(&client.ptdmq, NULL, &kxmq_thread_main, (void*)client.mq)) {
+        char *msg = strerror(errno);
+        fprintf(stderr, "unable to create thread : %s\n", msg);
+        exit(2);
+    }
+
+    sleep(3);
 
     gctx = zmalloc(sizeof (*gctx));
     if (gctx == NULL) {

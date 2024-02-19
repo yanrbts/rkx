@@ -58,21 +58,23 @@ static int kx_get_ipaddr(char *ip, size_t size) {
                 if (s != 0) {
 					strncpy(ip, "unknow", size-1);
                     ip[size] = '\0';
-					return 0;
+					goto ret;
                 }
 
                 if (strncmp(host, "127.", 4) != 0) {
                     //printf("%s: %s\n", ifa->ifa_name, host);
 					strncpy(ip, host, size-1);
                     ip[size] = '\0';
-					return 0;
+					goto ret;
                 }
             }
 		}
 	}
 	strncpy(ip, "unknow", size - 1);
     ip[size] = '\0';
-	return 0;
+ret:
+    freeifaddrs(ifaddr);
+    return 0;
 }
 
 /* Get the mac address of the first physical network card, 

@@ -26,58 +26,80 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __KX_RKX_H__
-#define __KX_RKX_H__
-
-#include "rkxconfig.h"
-#include "xxhash.h"
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include "util.h"
 #include "zmalloc.h"
-#include "log.h"
-#include "node.h"
-#include "user.h"
-#include "file.h"
-#include "adlist.h"
-#include "net.h"
-#include "aes.h"
-#include "db.h"
-#include "mq.h"
 
-#define MAXMAPSIZE  (10 * 1024 * 1024)
-
-struct kxoption {
-    struct kxoption *next;
-    char *key;
-    char *opt_string;
-    char *value;
-};
-
-struct options {
-    struct kxoption *kx_options;
-};
-struct context {
-    struct options *options;
-    int argc;
-    char **argv;
-};
-
-struct kxclient {
-    kxnode *node;               /* client node A machine can only have one node*/
-    kxuser *user;               /* User Info */
-    kxsyncnet *net;
-    kxdb *db;
-    kxmq *mq;
-    list *local_cryptfiles;     /* Local encrypted files */
-    list *remote_cryptfiles;    /* Encrypt files remotely */
-    pthread_t ptdnet;
-    pthread_t ptdmq;            /* MQTT server thread id*/
-    pthread_rwlock_t rwlock;
-};
-
-/** Initialize client node
- * @note Only called once when the server starts
- */
-void rkx_init(struct kxclient *kx);
-
-extern struct kxclient client;
-
+#ifdef _WIN32
+#define PATH_SEPARATOR   '\\'
+#else
+#define PATH_SEPARATOR   '/'
 #endif
+
+static char *path_normalize(const char *path) {
+    if (!path) return NULL;
+
+    char *copy = zstrdup(path);
+    if (NULL == copy) return NULL;
+    char *ptr = copy;
+
+    for (int i = 0; copy[i]; i++) {
+        *ptr++ = path[i];
+        if ('/' == path[i]) {
+            i++;
+            while ('/' == path[i]) i++;
+            i--;
+        }
+    }
+    *ptr = '\0';
+
+    return copy;
+}
+
+int kx_mkdirp(const char *path, unsigned int mode) {
+    char *pathname = NULL;
+    char *parent = NULL;
+
+    if (NULL == path) return -1;
+
+    pathname = path_normalize(path);
+    if (NULL == pathname) goto fail;
+
+    parent = zstrdup(pathname);
+    if (NULL == parent) goto fail;
+
+    char *p = parent + strlen(parent);
+    while (PATH_SEPARATOR != *p && p != parent) {
+        p--;
+    }
+    *p = '\0';
+
+    // make parent dir
+    if (p != parent && 0 != kx_mkdirp(parent, mode))
+        goto fail;
+    zfree(parent);
+
+    // make this one if parent has been made
+    #ifdef _WIN32
+        int rc = mkdir(pathname);
+    #else
+        int rc = mkdir(pathname, mode);
+    #endif
+
+    zfree(pathname);
+
+    return 0 == rc || EEXIST == errno
+        ? 0
+        : -1;
+
+fail:
+    zfree(pathname);
+    zfree(parent);
+    return -1;
+}
