@@ -1,3 +1,6 @@
 [submodule "mosquitto"]
 	path = mosquitto
 	url = https://github.com/eclipse/mosquitto.git
+[submodule "hiredis"]
+	path = hiredis
+	url = https://github.com/redis/hiredis.git

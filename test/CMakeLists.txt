@@ -17,24 +17,17 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_BUILD_TYPE Debug)
 project(rkxtest)
 
-link_directories(/home/yrb/src/hiredis/build 
+link_directories(../build/hiredis 
                 ../build/mosquitto/lib)
-include_directories(/home/yrb/src 
+include_directories(../ 
                     ../src 
                     ../mosquitto/include)
-# find_library(LIBHIREDIS_LIBRARY hiredis)
-# if(LIBHIREDIS_LIBRARY)
-#     message(STATUS "Found hiredis: ${LIBHIREDIS_LIBRARY}")
-# else()
-#     message(FATAL_ERROR "hiredis library not found.")
-# endif()
+
 set(SOURCES kx_test_filelist.c)
 
 add_executable(rkxtest ${SOURCES})
 target_link_libraries(rkxtest PRIVATE hiredis ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
-# find_package(Threads REQUIRED)
-# target_link_libraries(rkx PRIVATE Threads::Threads)
 
 set(MQSOURCES mqtest.c)
 add_executable(mqtest ${MQSOURCES})
-target_link_libraries(mqtest PRIVATE :libmosquitto.so.1)
+target_link_libraries(mqtest PRIVATE :libmosquitto.so)

@@ -33,24 +33,27 @@ endif()
 
 
 
-link_directories(/home/yrb/src/hiredis/build 
+link_directories(../build/hiredis 
                 ../liblmdb 
                 ../build/mosquitto/lib) 
-include_directories(/home/yrb/src 
+include_directories(../ 
                     ../liblmdb 
                     ../mosquitto/include)
-# find_library(LIBHIREDIS_LIBRARY hiredis)
-# if(LIBHIREDIS_LIBRARY)
-#     message(STATUS "Found hiredis: ${LIBHIREDIS_LIBRARY}")
-# else()
-#     message(FATAL_ERROR "hiredis library not found.")
-# endif()
 
 file(GLOB_RECURSE SOURCES "*.c" "*.h")
 
 add_executable(rkx ${SOURCES})
+
+# 添加子项目的自定义目标
+add_custom_target(lmdb
+    COMMAND ${CMAKE_MAKE_PROGRAM} -C ${CMAKE_CURRENT_SOURCE_DIR}/../liblmdb
+    COMMENT "Building lmdb"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../liblmdb
+)
+
+# 设置 lmdb 作为 rkx 的依赖
+add_dependencies(rkx lmdb)
 # 添加依赖关系，确保在构建 rkx 之前构建 mosquitto
 add_dependencies(rkx mosquitto)
-target_link_libraries(rkx PRIVATE hiredis lmdb :libmosquitto.so ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
-# find_package(Threads REQUIRED)
-# target_link_libraries(rkx PRIVATE Threads::Threads)
+
+target_link_libraries(rkx PRIVATE hiredis :liblmdb.a :libmosquitto.so ${LIBEVENT_LIBRARY} ${LIBPTHREAD})

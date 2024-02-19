@@ -31,6 +31,7 @@
  enable_language(C)
  enable_testing()
  
+ add_subdirectory(hiredis)
  add_subdirectory(mosquitto)
  add_subdirectory(src)
  add_subdirectory(test)
