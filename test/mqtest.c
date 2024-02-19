@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <errno.h>
 
 #define UNUSED(A) (void)(A)
 
@@ -13,6 +15,8 @@ typedef void (*callback_message)(struct mosquitto *mosq, void *obj,
 								const struct mosquitto_message *msg);
 typedef void (*callback_log)(struct mosquitto *mosq, void *obj, 
 							int level, const char *str);
+typedef void (*callback_publish)(struct mosquitto *mosq, void *obj, int mid);
+
 typedef struct kxmq {
     struct mosquitto *mosq;     /* mosquitto client instance. */
     int keepalive;				/* in seconds */
@@ -21,11 +25,10 @@ typedef struct kxmq {
     char *topic;
 	callback_connect on_connect;
 	callback_subscribe on_subscribe;
+	callback_publish on_publish;
 	callback_message on_message;
 	callback_log on_log;
 } kxmq;
-
-static kxmq *glmq = NULL;
 
 /* Callback called when the client receives a CONNACK message from the broker. */
 static void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
@@ -79,19 +82,25 @@ static void on_subscribe(struct mosquitto *mosq, void *obj,
 	}
 }
 
+/* Callback called when the client knows to the best of its abilities that a
+ * PUBLISH has been successfully sent. For QoS 0 this means the message has
+ * been completely written to the operating system. For QoS 1 this means we
+ * have received a PUBACK from the broker. For QoS 2 this means we have
+ * received a PUBCOMP from the broker. */
+void on_publish(struct mosquitto *mosq, void *obj, int mid) {
+	printf("Message with mid %d has been published.\n", mid);
+}
+
 /* Callback called when the client receives a message. */
-static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
-{
+static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {
 	/* This blindly prints the payload, but the payload can be anything so take care. */
 	printf("%s %d %s\n", msg->topic, msg->qos, (char *)msg->payload);
 }
 
-static void on_logcb(struct mosquitto *mosq, void *obj, int level, const char *str)
-{
+static void on_logcb(struct mosquitto *mosq, void *obj, int level, const char *str) {
 	UNUSED(mosq);
 	UNUSED(obj);
 	UNUSED(level);
-
 	// printf("%s\n", str);
 }
 
@@ -183,6 +192,36 @@ int kx_mq_loop_start(kxmq *kq) {
 	return 0;
 }
 
+/** @brief Publish a message on a given topic.
+ * @param kq kxmq instance.
+ * @param data Data to be sent
+ * @return Returns 0 on success, -1 otherwise */
+int kx_mq_publish(kxmq *kq, const char *data) {
+	int rc;
+
+	/* Run the network loop in a background thread, this call returns quickly. */
+	rc = mosquitto_loop_start(kq->mosq);
+	if(rc != MOSQ_ERR_SUCCESS){
+		mosquitto_destroy(kq->mosq);
+		fprintf(stderr, "MQTT Error: %s\n", mosquitto_strerror(rc));
+		return -1;
+	}
+	/* Publish the message
+	 * mosq - our client instance
+	 * *mid = NULL - we don't want to know what the message id for this message is
+	 * topic = "example/temperature" - the topic on which this message will be published
+	 * payloadlen = strlen(payload) - the length of our payload in bytes
+	 * payload - the actual payload
+	 * qos = 2 - publish with QoS 2 for this example
+	 * retain = false - do not use the retained message feature for this message
+	 */
+	rc = mosquitto_publish(kq->mosq, NULL, kq->topic, strlen(data), data, 2, false);
+	if(rc != MOSQ_ERR_SUCCESS){
+		fprintf(stderr, "MQTT Error publishing: %s\n", mosquitto_strerror(rc));
+	}
+	return 0;
+}
+
 void kx_mq_set_connect_cb(kxmq *kq, callback_connect fconnect) {
 	kq->on_connect = fconnect != NULL ? fconnect : on_connect;
 	mosquitto_connect_callback_set(kq->mosq, fconnect);
@@ -200,7 +239,18 @@ void kx_mq_set_log_cb(kxmq *kq, callback_log flog) {
 	mosquitto_log_callback_set(kq->mosq, flog);
 }
 
+void kx_mq_set_publish_cb(kxmq *kq, callback_publish fpublish) {
+	mosquitto_publish_callback_set(kq->mosq, fpublish);
+}
+
+static void *thread_main(void *arg) {
+	kxmq *kq = (kxmq*)arg;
+
+	kx_mq_publish(kq, "publish test");
+}
+
 int main(int argc, char *argv[]) {
+	pthread_t pth;
 
 	kxmq *mq = kx_mq_init("127.0.0.1", 1883, "test/topic");
 
@@ -208,6 +258,13 @@ int main(int argc, char *argv[]) {
 	kx_mq_set_subscribe_cb(mq, on_subscribe);
 	kx_mq_set_message_cb(mq, on_message);
 	kx_mq_set_log_cb(mq, on_logcb);
+	kx_mq_set_publish_cb(mq, on_publish);
+
+	if (pthread_create(&pth, NULL, &thread_main, (void*)mq)) {
+        char *msg = strerror(errno);
+        fprintf(stderr, "unable to create thread : %s\n", msg);
+        exit(2);
+    }
 
 	kx_mq_loop_start(mq);
 

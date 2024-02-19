@@ -17,6 +17,13 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_BUILD_TYPE Debug)
 project(rkxtest)
 
+find_library(LIBPTHREAD pthread)
+if (LIBPTHREAD)
+    message(STATUS "Found libpthread: ${LIBPTHREAD}")
+else()
+    message(FATAL_ERROR "libpthread not found.")
+endif()
+
 link_directories(../build/hiredis 
                 ../build/mosquitto/lib)
 include_directories(../ 
@@ -30,4 +37,8 @@ target_link_libraries(rkxtest PRIVATE hiredis ${LIBEVENT_LIBRARY} ${LIBPTHREAD})
 
 set(MQSOURCES mqtest.c)
 add_executable(mqtest ${MQSOURCES})
-target_link_libraries(mqtest PRIVATE :libmosquitto.so)
+target_link_libraries(mqtest PRIVATE :libmosquitto.so ${LIBPTHREAD})
+
+set(MQPUBSUBSOURCES mqpubsub.c)
+add_executable(mqpubsub ${MQPUBSUBSOURCES})
+target_link_libraries(mqpubsub PRIVATE :libmosquitto.so ${LIBPTHREAD})
