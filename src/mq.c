@@ -167,8 +167,7 @@ int kx_mq_loop_start(kxmq *kq) {
 	/* Run the network loop in a blocking call.
 	 *
 	 * This call will continue forever, carrying automatic reconnections if
-	 * necessary, until the user calls mosquitto_disconnect().
-	 */
+	 * necessary, until the user calls mosquitto_disconnect(). */
 	mosquitto_loop_forever(kq->mosq, -1, 1);
 
 	return 0;
